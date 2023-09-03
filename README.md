@@ -1,4 +1,4 @@
-# How To Retrieve Column Names From a Dataset Stored in S3 That's Too Large to Download or Open, Using AWS Athena
+# AWS Athena: How To Retrieve Column Names From a CSV Dataset Stored in AWS S3 That's Too Large to Download or Open
 ### The Problem
 There may be instances when you're working in AWS S3 and Athena when your data file, having been successfully uploaded to a folder within an S3 bucket, is too large to open using S3 Select and may even be too large to safely download and open in any text editor. What to do? How are you supposed to retrieve column names to create an accurate table in Athena if you can't see the data you're working with?
 
@@ -6,15 +6,13 @@ There may be instances when you're working in AWS S3 and Athena when your data f
 > Note: The following solution will only work for data whose file contains column headers.
 
 ### Step 1: Create the Table in AWS Athena Using Placeholder Column Names and Nullable String Datatypes 
-A somewhat tedious (but nonetheless useful) workaround to this problem involves creating a table using the method described in [AWS Athena CREATE TABLE documentation](https://docs.aws.amazon.com/athena/latest/ug/create-table.html) but with the following modifications:
+A somewhat tedious (but nonetheless viable) workaround to this problem involves creating a table using the method described in [AWS Athena CREATE TABLE documentation](https://docs.aws.amazon.com/athena/latest/ug/create-table.html) but with the following modifications:
 
-    <ol>
     1. Use placeholder names for the column headers.
     2. Call in all the data as 'string' datatypes.
     3. Call in all the columns as nullable.
     4. Take a blind guess at how many columns your data is likely to contain. 
     5. Omit from the ```TBLPROPERTIES``` definition the parameter ```'skip.header.line.count' = '1'```
-    <\ol>
 
 With these modifications implemented, your initial ```CREATE TABLE``` script might resemble the following:
 
@@ -47,15 +45,11 @@ Once you've created the table, you can view the first ten rows of data by runnin
 
 ```select * from my_unviewable_data_table limit 10```
 
-![placeholder text](filepath)
-
 My recommendation at this point would be to identify a column that appears to contain mostly *numeric* data. Because you've called in all the columns as strings (synonymous with varchars in Athena) you can then query the data by that column <ins>in reverse order</ins>. Because Athena processes numbers before letters when given string data, a query sorting a numeric column in descending order should reveal the column headers contained within the dataset (if there are any). 
 
 Say, for example, ```column3``` in the ```my_unviewable_data_table``` contained what appeared to be only numbers. In this case, you could run the following query.
 
 ```SELECT * FROM my_unviewable_data_table ORDER BY column3 DESC limit 10```
-
-![placeholder text](filepath)
 
 ### Step 3: Locate the Number of Columns in Your Dataset
 If the ```CREATE TABLE``` script from Step 1 were to yield a dataset that appears to have data in all the columns (column1 through column10) you may want to drop the table using the following query:
@@ -115,4 +109,3 @@ With your ```CREATE TABLE``` script fully updated to suit your dataset, you can 
 ```DROP TABLE IF EXISTS my_unviewable_data_table```
 
 As a final step, you can recreate your table using your updated script.
-
